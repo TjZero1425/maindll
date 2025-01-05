@@ -1,3 +1,48 @@
+local Drawings = {}
+local drawings = {}
+local camera = game.Workspace.CurrentCamera
+local drawingUI = Instance.new("ScreenGui")
+local coreGui = game:GetService("CoreGui")
+drawingUI.Name = "Drawing"
+drawingUI.IgnoreGuiInset = true
+drawingUI.DisplayOrder = 0x7fffffff
+drawingUI.Parent = coreGui
+
+local drawingIndex = 0
+local uiStrokes = table.create(0)
+local baseDrawingObj = setmetatable({
+	Visible = true,
+	ZIndex = 0,
+	Transparency = 1,
+	Color = Color3.new(),
+	Remove = function(self)
+		setmetatable(self, nil)
+	end
+}, {
+	__add = function(t1, t2)
+		local result = table.clone(t1)
+
+		for index, value in t2 do
+			result[index] = value
+		end
+		return result
+	end
+})
+local drawingFontsEnum = {
+	[0] = Font.fromEnum(Enum.Font.Roboto),
+	[1] = Font.fromEnum(Enum.Font.Legacy),
+	[2] = Font.fromEnum(Enum.Font.SourceSans),
+	[3] = Font.fromEnum(Enum.Font.RobotoMono),
+}
+-- function
+local function getFontFromIndex(fontIndex: number): Font
+	return drawingFontsEnum[fontIndex]
+end
+
+local function convertTransparency(transparency: number): number
+	return math.clamp(1 - transparency, 0, 1)
+end
+
 local DrawingLib = {}
 DrawingLib.Fonts = {
 	["UI"] = 0,
