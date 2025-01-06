@@ -1,4 +1,4 @@
-getgenv().islocalsourcecontainer = newcclosure(function(inst: LuaSourceContainer): boolean
+local islocalsourcecontainer = newcclosure(function(inst: LuaSourceContainer): boolean
     if isA(inst, "ModuleScript") then
         return true;
     elseif isA(inst, "Script") and inst.RunContext == Enum.RunContext.Client then
