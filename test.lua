@@ -3,6 +3,6 @@
         return Instance.new("Player")
     end)
 
-    if s and string.find(r, "lacking capability") then
-        warn("Noob")
+    if not s and string.find(r, "lacking capability") then
+        warn("Good")
     end
