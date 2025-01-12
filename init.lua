@@ -101,7 +101,7 @@ local function ModifyDecompiledCode(code)
     return table.concat(modifiedLines, "\\n")
 end
 
-local Decompile = function(Script)
+getgenv().decompile = function(Script)
     local bytecode = getscriptbytecode(Script)
     local encoded = base64_encode(bytecode)
 
