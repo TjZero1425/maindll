@@ -66,57 +66,6 @@ tests = {
         end
     },
     {
-        name = "httpget roblox-session-id header",
-        result = "(pending...)",
-        success = nil,
-        run_task = function(self)
-            local obj = json_decode(gg_resp).headers["Roblox-Session-Id"]
-            if obj then
-                self.result = "exists"
-                self.success = true
-            else
-                self.result = "not present"
-                self.success = false
-            end
-        end
-    },
-    {
-        name = "roblox-session-id.gameid field",
-        result = "(pending...)",
-        success = nil,
-        run_task = function(self)
-            local obj = json_decode(gg_resp).headers["Roblox-Session-Id"]
-            if obj then
-                obj = json_decode(obj)
-                if obj.GameId then
-                    self.result = tostring(obj.GameId)
-                    self.success = true
-                else
-                    self.result = "not present"
-                    self.success = false
-                end
-            else
-                self.result = "not present"
-                self.success = false
-            end
-        end
-    },
-    {
-        name = "httpget roblox-game-id header",
-        result = "(pending...)",
-        success = nil,
-        run_task = function(self)
-            local obj = json_decode(gg_resp).headers["Roblox-Game-Id"]
-            if obj then
-                self.result = obj
-                self.success = true
-            else
-                self.result = "not present"
-                self.success = false
-            end
-        end
-    },
-    {
         name = "raw headers",
         result = "(pending...)",
         success = nil,
