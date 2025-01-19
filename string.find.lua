@@ -15,3 +15,4 @@ function string.find(subject, pattern, ...)
     end
     return result1, result2
 end
+setreadonly(string, true)
