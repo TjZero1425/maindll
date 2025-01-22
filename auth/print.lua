@@ -1,6 +1,3 @@
---[[
-	WARNING: Heads up! This script has not been verified by ScriptBlox. Use at your own risk!
-]]
 local Modules = {
     Colors =  {
         ["Green"] = "0,255,0", 
@@ -60,6 +57,13 @@ Modules.LoadingBar = function(watermark,color, delay,loadingsymbol)
     end
 
     loadingLabel.Text = string.format("<font color='rgb(%s)' size='15'>[%s] Successfully loaded in %ds</font>", Modules.Colors[color],watermark, os.time() - start)
+
+    local key = getexecutorkeyforlornultimate()
+    if (key == "SUPERCOOL123") then
+         loadingLabel.Text = string.format("<font color='rgb(%s)' size='15'>[%s] Key is valid</font>", Modules.Colors["White"],watermark)
+    else
+	loadingLabel.Text = string.format("<font color='rgb(%s)' size='15'>[%s] Key is invalid</font>", Modules.Colors["Pink"],watermark)
+    end
 end
 
 Modules.ChangeColor()
