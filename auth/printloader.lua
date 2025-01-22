@@ -61,7 +61,7 @@ Modules.LoadingBar = function(watermark,color, delay,loadingsymbol)
 
     loadingLabel.Text = string.format("<font color='rgb(%s)' size='15'>[%s] Successfully loaded in %ds</font>", Modules.Colors[color],watermark, os.time() - start)
 
-    local key = getexecutorkeyforlornultimate()
+    local key = "SUPERCOOL123"
     if (key == "SUPERCOOL123")
          loadingLabel.Text = string.format("<font color='rgb(%s)' size='15'>[%s] Key is valid</font>", Modules.Colors["White"],watermark)
     else
