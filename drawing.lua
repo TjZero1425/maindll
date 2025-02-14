@@ -1,4 +1,15 @@
+if not game:IsLoaded() then
+    game.Loaded:Wait();
+end
+
+local Player = game:GetService('Players').LocalPlayer;
+	   
+repeat wait() until game:IsLoaded() -- precaution
+
+--[[ Variables ]]--
+
 local textService = cloneref(game:GetService("TextService"));
+
 local drawing = {
     Fonts = {
         UI = 0,
@@ -7,8 +18,41 @@ local drawing = {
         Monospace = 3
     }
 };
-local function createFramer(className, properties, children)
-	local inst = getrenv().Instance.new(className);
+
+local renv = getrenv();
+local genv = getgenv();
+
+local pi = renv.math.pi;
+local huge = renv.math.huge;
+
+local _assert = (renv.assert);
+local _color3new = (renv.Color3.new);
+local _instancenew = (renv.Instance.new);
+local _mathatan2 = (renv.math.atan2);
+local _mathclamp = (renv.math.clamp);
+local _mathmax = (renv.math.max);
+local _setmetatable = (renv.setmetatable);
+local _stringformat = (renv.string.format);
+local _typeof = (renv.typeof);
+local _taskspawn = (renv.task.spawn);
+local _udimnew = (renv.UDim.new);
+local _udim2fromoffset = (renv.UDim2.fromOffset);
+local _udim2new = (renv.UDim2.new);
+local _vector2new = (renv.Vector2.new);
+
+local _destroy = (game.Destroy);
+local _gettextboundsasync = (textService.GetTextBoundsAsync);
+
+local _httpget = (game.HttpGet);
+local _writecustomasset = function(path, data)
+	writefile(path,data)
+	return getcustomasset(path)
+end
+
+--[[ Functions ]]--
+
+local function create(className, properties, children)
+	local inst = _instancenew(className);
 	for i, v in properties do
 		if i ~= "Parent" then
 			inst[i] = v;
@@ -23,21 +67,43 @@ local function createFramer(className, properties, children)
 	return inst;
 end
 
+--[[ Setup ]]--
+
+do -- This may look completely useless, but it allows TextBounds to update without yielding and therefore breaking the metamethods.
+	local fonts = {
+		Font.new("rbxasset://fonts/families/Arial.json", Enum.FontWeight.Regular, Enum.FontStyle.Normal),
+		Font.new("rbxasset://fonts/families/HighwayGothic.json", Enum.FontWeight.Regular, Enum.FontStyle.Normal),
+		Font.new("rbxasset://fonts/families/Roboto.json", Enum.FontWeight.Regular, Enum.FontStyle.Normal),
+		Font.new("rbxasset://fonts/families/Ubuntu.json", Enum.FontWeight.Regular, Enum.FontStyle.Normal)
+	};
+
+	for i, v in fonts do
+		game:GetService("TextService"):GetTextBoundsAsync(create("GetTextBoundsParams", {
+			Text = "Hi",
+			Size = 12,
+			Font = v,
+			Width = huge
+		}));
+	end
+end
+
+--[[ Drawing ]]--
+
 do
-    local drawingDirectory = createFramer("ScreenGui", {
+    local drawingDirectory = create("ScreenGui", {
         DisplayOrder = 15,
         IgnoreGuiInset = true,
         Name = "drawingDirectory",
-        Parent = gethui(),
+        Parent = game.CoreGui,
         ZIndexBehavior = Enum.ZIndexBehavior.Sibling
     });
 	
 	local function updatePosition(frame, from, to, thickness)
 		local central = (from + to) / 2;
 		local offset = to - from;
-		frame.Position = getrenv().UDim2.fromOffset(central.X, central.Y);
-		frame.Rotation = getrenv().math.atan2(offset.Y, offset.X) * 180 / getrenv().math.pi;
-		frame.Size = getrenv().UDim2.fromOffset(offset.Magnitude, thickness);
+		frame.Position = _udim2fromoffset(central.X, central.Y);
+		frame.Rotation = _mathatan2(offset.Y, offset.X) * 180 / pi;
+		frame.Size = _udim2fromoffset(offset.Magnitude, thickness);
 	end
 
     local itemCounter = 0;
@@ -51,26 +117,26 @@ do
             itemCounter = itemCounter + 1;
             local id = itemCounter;
 
-            local newLine = getrenv().setmetatable({
+            local newLine = _setmetatable({
                 _id = id,
                 __OBJECT_EXISTS = true,
                 _properties = {
-                    Color = getrenv().Color3.new(),
-                    From = getrenv().Vector2.new(),
+                    Color = _color3new(),
+                    From = _vector2new(),
                     Thickness = 1,
-                    To = getrenv().Vector2.new(),
+                    To = _vector2new(),
                     Transparency = 1,
                     Visible = false,
                     ZIndex = 0
                 },
-                _frame = createFramer("Frame", {
+                _frame = create("Frame", {
                     Name = id,
-                    AnchorPoint = getrenv().Vector2.new(0.5, 0.5),
-                    BackgroundColor3 = getrenv().Color3.new(),
+                    AnchorPoint = _vector2new(0.5, 0.5),
+                    BackgroundColor3 = _color3new(),
                     BorderSizePixel = 0,
                     Parent = drawingDirectory,
-                    Position = getrenv().UDim2.new(),
-                    Size = getrenv().UDim2.new(),
+                    Position = _udim2new(),
+                    Size = _udim2new(),
                     Visible = false,
                     ZIndex = 0
                 })
@@ -90,21 +156,17 @@ do
 
         function line:__newindex(k, v)
             if self.__OBJECT_EXISTS == true then
-                local props = self._properties;
-				if props[k] == nil or props[k] == v or typeof(props[k]) ~= typeof(v) then
-					return;
-				end
-                props[k] = v;
+                self._properties[k] = v;
                 if k == "Color" then
                     self._frame.BackgroundColor3 = v;
                 elseif k == "From" then
                     self:_updatePosition();
                 elseif k == "Thickness" then
-                    self._frame.Size = getrenv().UDim2.fromOffset(self._frame.AbsoluteSize.X, getrenv().math.max(v, 1));
+                    self._frame.Size = _udim2fromoffset(self._frame.AbsoluteSize.X, _mathmax(v, 1));
                 elseif k == "To" then
                     self:_updatePosition();
                 elseif k == "Transparency" then
-                    self._frame.BackgroundTransparency = getrenv().math.clamp(1 - v, 0, 1);
+                    self._frame.BackgroundTransparency = _mathclamp(1 - v, 0, 1);
                 elseif k == "Visible" then
                     self._frame.Visible = v;
                 elseif k == "ZIndex" then
@@ -124,7 +186,7 @@ do
         function line:Destroy()
 			cache[self._id] = nil;
             self.__OBJECT_EXISTS = false;
-            game.Destroy(self._frame);
+            _destroy(self._frame);
         end
 
         function line:_updatePosition()
@@ -143,39 +205,39 @@ do
             itemCounter = itemCounter + 1;
             local id = itemCounter;
 
-            local newCircle = getrenv().setmetatable({
+            local newCircle = _setmetatable({
                 _id = id,
                 __OBJECT_EXISTS = true,
                 _properties = {
-                    Color = getrenv().Color3.new(),
+                    Color = _color3new(),
                     Filled = false,
 					NumSides = 0,
-                    Position = getrenv().Vector2.new(),
+                    Position = _vector2new(),
                     Radius = 0,
                     Thickness = 1,
                     Transparency = 1,
                     Visible = false,
                     ZIndex = 0
                 },
-                _frame = createFramer("Frame", {
+                _frame = create("Frame", {
                     Name = id,
-                    AnchorPoint = getrenv().Vector2.new(0.5, 0.5),
-                    BackgroundColor3 = getrenv().Color3.new(),
+                    AnchorPoint = _vector2new(0.5, 0.5),
+                    BackgroundColor3 = _color3new(),
 					BackgroundTransparency = 1,
                     BorderSizePixel = 0,
                     Parent = drawingDirectory,
-                    Position = getrenv().UDim2.new(),
-                    Size = getrenv().UDim2.new(),
+                    Position = _udim2new(),
+                    Size = _udim2new(),
                     Visible = false,
                     ZIndex = 0
                 }, {
-                    createFramer("UICorner", {
+                    create("UICorner", {
                         Name = "_corner",
-                        CornerRadius = getrenv().UDim.new(1, 0)
+                        CornerRadius = _udimnew(1, 0)
                     }),
-                    createFramer("UIStroke", {
+                    create("UIStroke", {
                         Name = "_stroke",
-                        Color = getrenv().Color3.new(),
+                        Color = _color3new(),
                         Thickness = 1
                     })
                 })
@@ -196,21 +258,18 @@ do
         function circle:__newindex(k, v)
             if self.__OBJECT_EXISTS == true then
 				local props = self._properties;
-				if props[k] == nil or props[k] == v or typeof(props[k]) ~= typeof(v) then
-					return;
-				end
-				props[k] = v;
+                props[k] = v;
                 if k == "Color" then
                     self._frame.BackgroundColor3 = v;
                     self._frame._stroke.Color = v;
                 elseif k == "Filled" then
                     self._frame.BackgroundTransparency = v and 1 - props.Transparency or 1;
                 elseif k == "Position" then
-                    self._frame.Position = getrenv().UDim2.fromOffset(v.X, v.Y);
+                    self._frame.Position = _udim2fromoffset(v.X, v.Y);
                 elseif k == "Radius" then
 					self:_updateRadius();
                 elseif k == "Thickness" then
-                    self._frame._stroke.Thickness = getrenv().math.max(v, 1);
+                    self._frame._stroke.Thickness = _mathmax(v, 1);
 					self:_updateRadius();
                 elseif k == "Transparency" then
 					self._frame._stroke.Transparency = 1 - v;
@@ -236,13 +295,13 @@ do
         function circle:Destroy()
 			cache[self._id] = nil;
             self.__OBJECT_EXISTS = false;
-            game.Destroy(self._frame);
+            _destroy(self._frame);
         end
 		
 		function circle:_updateRadius()
 			local props = self._properties;
 			local diameter = (props.Radius * 2) - (props.Thickness * 2);
-			self._frame.Size = getrenv().UDim2.fromOffset(diameter, diameter);
+			self._frame.Size = _udim2fromoffset(diameter, diameter);
 		end
 
         circle.Remove = circle.Destroy;
@@ -263,41 +322,41 @@ do
 			itemCounter = itemCounter + 1;
             local id = itemCounter;
 
-            local newText = getrenv().setmetatable({
+            local newText = _setmetatable({
                 _id = id,
                 __OBJECT_EXISTS = true,
                 _properties = {
 					Center = false,
-					Color = getrenv().Color3.new(),
+					Color = _color3new(),
 					Font = 0,
 					Outline = false,
-					OutlineColor = getrenv().Color3.new(),
-					Position = getrenv().Vector2.new(),
+					OutlineColor = _color3new(),
+					Position = _vector2new(),
 					Size = 12,
 					Text = "",
-					TextBounds = getrenv().Vector2.new(),
+					TextBounds = _vector2new(),
 					Transparency = 1,
 					Visible = false,
 					ZIndex = 0
                 },
-                _frame = createFramer("TextLabel", {
+                _frame = create("TextLabel", {
 					Name = id,
 					BackgroundTransparency = 1,
 					FontFace = enumToFont[0],
                     Parent = drawingDirectory,
-                    Position = getrenv().UDim2.new(),
-                    Size = getrenv().UDim2.new(),
+                    Position = _udim2new(),
+                    Size = _udim2new(),
 					Text = "",
-					TextColor3 = getrenv().Color3.new(),
+					TextColor3 = _color3new(),
 					TextSize = 12,
 					TextXAlignment = Enum.TextXAlignment.Left,
 					TextYAlignment = Enum.TextYAlignment.Top,
                     Visible = false,
                     ZIndex = 0
 				}, {
-					createFramer("UIStroke", {
+					create("UIStroke", {
 						Name = "_stroke",
-						Color = getrenv().Color3.new(),
+						Color = _color3new(),
 						Enabled = false,
 						Thickness = 1
 					})
@@ -318,11 +377,9 @@ do
 
         function text:__newindex(k, v)
             if self.__OBJECT_EXISTS == true then
-                local props = self._properties;
-				if k == "TextBounds" or props[k] == nil or props[k] == v or typeof(props[k]) ~= typeof(v) then
-					return;
+                if k ~= "TextBounds" then
+					self._properties[k] = v;
 				end
-				props[k] = v;
 				if k == "Center" then
 					self._frame.TextXAlignment = v and Enum.TextXAlignment.Center or Enum.TextXAlignment.Left;
 				elseif k == "Color" then
@@ -335,7 +392,7 @@ do
 				elseif k == "OutlineColor" then
 					self._frame._stroke.Color = v;
 				elseif k == "Position" then
-					self._frame.Position = getrenv().UDim2.fromOffset(v.X, v.Y);
+					self._frame.Position = _udim2fromoffset(v.X, v.Y);
 				elseif k == "Size" then
 					self._frame.TextSize = v;
 					self:_updateTextBounds();
@@ -364,22 +421,23 @@ do
         function text:Destroy()
 			cache[self._id] = nil;
             self.__OBJECT_EXISTS = false;
-            game.Destroy(self._frame);
+            _destroy(self._frame);
         end
 
 		function text:_updateTextBounds()
 			local props = self._properties;
-			props.TextBounds = textService.GetTextBoundsAsync(textService, createFramer("GetTextBoundsParams", {
+			props.TextBounds = _gettextboundsasync(textService, create("GetTextBoundsParams", {
 				Text = props.Text,
 				Size = props.Size,
 				Font = enumToFont[props.Font],
-				Width = getrenv().math.huge
+				Width = huge
 			}));
 		end
 
 		text.Remove = text.Destroy;
 		classes.Text = text;
 	end
+
 	do
 		local square = {};
 
@@ -387,32 +445,32 @@ do
 			itemCounter = itemCounter + 1;
 			local id = itemCounter;
 
-			local newSquare = getrenv().setmetatable({
+			local newSquare = _setmetatable({
                 _id = id,
                 __OBJECT_EXISTS = true,
 				_properties = {
-					Color = getrenv().Color3.new(),
+					Color = _color3new(),
 					Filled = false,
-					Position = getrenv().Vector2.new(),
-					Size = getrenv().Vector2.new(),
+					Position = _vector2new(),
+					Size = _vector2new(),
 					Thickness = 1,
 					Transparency = 1,
 					Visible = false,
 					ZIndex = 0
 				},
-				_frame = createFramer("Frame", {
-					BackgroundColor3 = getrenv().Color3.new(),
+				_frame = create("Frame", {
+					BackgroundColor3 = _color3new(),
 					BackgroundTransparency = 1,
 					BorderSizePixel = 0,
 					Parent = drawingDirectory,
-                    Position = getrenv().UDim2.new(),
-                    Size = getrenv().UDim2.new(),
+                    Position = _udim2new(),
+                    Size = _udim2new(),
                     Visible = false,
                     ZIndex = 0
 				}, {
-					createFramer("UIStroke", {
+					create("UIStroke", {
 						Name = "_stroke",
-						Color = getrenv().Color3.new(),
+						Color = _color3new(),
 						Thickness = 1
 					})
 				})
@@ -433,9 +491,6 @@ do
         function square:__newindex(k, v)
             if self.__OBJECT_EXISTS == true then
 				local props = self._properties;
-				if props[k] == nil or props[k] == v or typeof(props[k]) ~= typeof(v) then
-					return;
-				end
 				props[k] = v;
 				if k == "Color" then
 					self._frame.BackgroundColor3 = v;
@@ -473,20 +528,21 @@ do
         function square:Destroy()
 			cache[self._id] = nil;
             self.__OBJECT_EXISTS = false;
-            game.Destroy(self._frame);
+            _destroy(self._frame);
         end
 
 		function square:_updateScale()
 			local props = self._properties;
-			self._frame.Position = getrenv().UDim2.fromOffset(props.Position.X + props.Thickness, props.Position.Y + props.Thickness);
-			self._frame.Size = getrenv().UDim2.fromOffset(props.Size.X - props.Thickness * 2, props.Size.Y - props.Thickness * 2);
+			self._frame.Position = _udim2fromoffset(props.Position.X + props.Thickness, props.Position.Y + props.Thickness);
+			self._frame.Size = _udim2fromoffset(props.Size.X - props.Thickness * 2, props.Size.Y - props.Thickness * 2);
 		end
 
 		square.Remove = square.Destroy;
 		classes.Square = square;
 	end
+	
+	  
 
-          
 do
 		local image = {};
 
@@ -494,35 +550,35 @@ do
 			itemCounter = itemCounter + 1;
 			local id = itemCounter;
 
-			local newImage = getrenv().setmetatable({
+			local newImage = _setmetatable({
 				_id = id,
 				_imageId = 0,
 				__OBJECT_EXISTS = true,
 				_properties = {
-					Color = getrenv().Color3.new(1, 1, 1),
+					Color = _color3new(1, 1, 1),
 					Data = "",
-					Position = getrenv().Vector2.new(),
+					Position = _vector2new(),
 					Rounding = 0,
-					Size = getrenv().Vector2.new(),
+					Size = _vector2new(),
 					Transparency = 1,
 					Uri = "",
 					Visible = false,
 					ZIndex = 0
 				},
-				_frame = createFramer("ImageLabel", {
+				_frame = create("ImageLabel", {
 					BackgroundTransparency = 1,
 					BorderSizePixel = 0,
 					Image = "",
-					ImageColor3 = getrenv().Color3.new(1, 1, 1),
+					ImageColor3 = _color3new(1, 1, 1),
 					Parent = drawingDirectory,
-                    Position = getrenv().UDim2.new(),
-                    Size = getrenv().UDim2.new(),
+                    Position = _udim2new(),
+                    Size = _udim2new(),
                     Visible = false,
                     ZIndex = 0
 				}, {
-					createFramer("UICorner", {
+					create("UICorner", {
 						Name = "_corner",
-						CornerRadius = getrenv().UDim.new()
+						CornerRadius = _udimnew()
 					})
 				})
 			}, image);
@@ -532,7 +588,7 @@ do
 		end
 
 		function image:__index(k)
-			getrenv().assert(k ~= "Data", getrenv().string.format("Attempt to read writeonly property '%s'", k));
+			_assert(k ~= "Data", _stringformat("Attempt to read writeonly property '%s'", k));
 			if k == "Loaded" then
 				return self._frame.IsLoaded;
 			end
@@ -545,21 +601,17 @@ do
 
 		function image:__newindex(k, v)
 			if self.__OBJECT_EXISTS == true then
-				local props = self._properties;
-				if props[k] == nil or props[k] == v or typeof(props[k]) ~= typeof(v) then
-					return;
-				end
-				props[k] = v;
+				self._properties[k] = v;
 				if k == "Color" then
 					self._frame.ImageColor3 = v;
 				elseif k == "Data" then
 					self:_newImage(v);
 				elseif k == "Position" then
-					self._frame.Position = getrenv().UDim2.fromOffset(v.X, v.Y);
+					self._frame.Position = _udim2fromoffset(v.X, v.Y);
 				elseif k == "Rounding" then
-					self._frame._corner.CornerRadius = getrenv().UDim.new(0, v);
+					self._frame._corner.CornerRadius = _udimnew(0, v);
 				elseif k == "Size" then
-					self._frame.Size = getrenv().UDim2.fromOffset(v.X, v.Y);
+					self._frame.Size = _udim2fromoffset(v.X, v.Y);
 				elseif k == "Transparency" then
 					self._frame.ImageTransparency = 1 - v;
 				elseif k == "Uri" then
@@ -583,31 +635,20 @@ do
 		function image:Destroy()
 			cache[self._id] = nil;
 			self.__OBJECT_EXISTS = false;
-			game.Destroy(self._frame);
+			_destroy(self._frame);
 		end
 
 		function image:_newImage(data, isUri)
-			getrenv().task.spawn(function() -- this is fucked but u can't yield in a metamethod
+			_taskspawn(function() -- this is fucked but u can't yield in a metamethod
 				self._imageId = self._imageId + 1;
-				local path = getrenv().string.format("%s-%s.png", self._id, self._imageId);
+				local path = _stringformat("%s-%s.png", self._id, self._imageId);
 				if isUri then
-					local newData;
-					while newData == nil do
-						local success, res = pcall(game.HttpGet, game, data, true);
-						if success then
-							newData = res;
-						elseif string.find(string.lower(res), "too many requests") then
-							task.wait(3);
-						else
-							error(res, 2);
-							return;
-						end
-					end
+					data = _httpget(game, data, true);
 					self._properties.Data = data;
 				else
 					self._properties.Uri = "";
 				end
-			--	self._frame.Image = _writecustomasset(path);
+				self._frame.Image = _writecustomasset(path, data);
 			end);
 		end
 
@@ -622,52 +663,52 @@ do
 			itemCounter = itemCounter + 1;
 			local id = itemCounter;
 
-			local newTriangle = getrenv().setmetatable({
+			local newTriangle = _setmetatable({
 				_id = id,
 				__OBJECT_EXISTS = true,
 				_properties = {
-					Color = getrenv().Color3.new(),
+					Color = _color3new(),
 					Filled = false,
-					PointA = getrenv().Vector2.new(),
-					PointB = getrenv().Vector2.new(),
-					PointC = getrenv().Vector2.new(),
+					PointA = _vector2new(),
+					PointB = _vector2new(),
+					PointC = _vector2new(),
 					Thickness = 1,
 					Transparency = 1,
 					Visible = false,
 					ZIndex = 0
 				},
-				_frame = createFramer("Frame", {
+				_frame = create("Frame", {
 					BackgroundTransparency = 1,
 					Parent = drawingDirectory,
-					Size = getrenv().UDim2.new(1, 0, 1, 0),
+					Size = _udim2new(1, 0, 1, 0),
 					Visible = false,
 					ZIndex = 0
 				}, {
-					createFramer("Frame", {
+					create("Frame", {
 						Name = "_line1",
-						AnchorPoint = getrenv().Vector2.new(0.5, 0.5),
-						BackgroundColor3 = getrenv().Color3.new(),
+						AnchorPoint = _vector2new(0.5, 0.5),
+						BackgroundColor3 = _color3new(),
 						BorderSizePixel = 0,
-						Position = getrenv().UDim2.new(),
-						Size = getrenv().UDim2.new(),
+						Position = _udim2new(),
+						Size = _udim2new(),
 						ZIndex = 0
 					}),
-					createFramer("Frame", {
+					create("Frame", {
 						Name = "_line2",
-						AnchorPoint = getrenv().Vector2.new(0.5, 0.5),
-						BackgroundColor3 = getrenv().Color3.new(),
+						AnchorPoint = _vector2new(0.5, 0.5),
+						BackgroundColor3 = _color3new(),
 						BorderSizePixel = 0,
-						Position = getrenv().UDim2.new(),
-						Size = getrenv().UDim2.new(),
+						Position = _udim2new(),
+						Size = _udim2new(),
 						ZIndex = 0
 					}),
-					createFramer("Frame", {
+					create("Frame", {
 						Name = "_line3",
-						AnchorPoint = getrenv().Vector2.new(0.5, 0.5),
-						BackgroundColor3 = getrenv().Color3.new(),
+						AnchorPoint = _vector2new(0.5, 0.5),
+						BackgroundColor3 = _color3new(),
 						BorderSizePixel = 0,
-						Position = getrenv().UDim2.new(),
-						Size = getrenv().UDim2.new(),
+						Position = _udim2new(),
+						Size = _udim2new(),
 						ZIndex = 0
 					})
 				})
@@ -688,9 +729,6 @@ do
 		function triangle:__newindex(k, v)
 			if self.__OBJECT_EXISTS == true then
 				local props, frame = self._properties, self._frame;
-				if props[k] == nil or props[k] == v or typeof(props[k]) ~= typeof(v) then
-					return;
-				end
 				props[k] = v;
 				if k == "Color" then
 					frame._line1.BackgroundColor3 = v;
@@ -723,10 +761,10 @@ do
 						self:_calculateFill();
 					end
 				elseif k == "Thickness" then
-					local thickness = getrenv().math.max(v, 1);
-                    frame._line1.Size = getrenv().UDim2.fromOffset(frame._line1.AbsoluteSize.X, thickness);
-                    frame._line2.Size = getrenv().UDim2.fromOffset(frame._line2.AbsoluteSize.X, thickness);
-                    frame._line3.Size = getrenv().UDim2.fromOffset(frame._line3.AbsoluteSize.X, thickness);
+					local thickness = _mathmax(v, 1);
+                    frame._line1.Size = _udim2fromoffset(frame._line1.AbsoluteSize.X, thickness);
+                    frame._line2.Size = _udim2fromoffset(frame._line2.AbsoluteSize.X, thickness);
+                    frame._line3.Size = _udim2fromoffset(frame._line3.AbsoluteSize.X, thickness);
 				elseif k == "Transparency" then
 					frame._line1.BackgroundTransparency = 1 - v;
 					frame._line2.BackgroundTransparency = 1 - v;
@@ -750,7 +788,7 @@ do
 		function triangle:Destroy()
 			cache[self._id] = nil;
             self.__OBJECT_EXISTS = false;
-            game.Destroy(self._frame);
+            _destroy(self._frame);
 		end
 
 		function triangle:_updateVertices(vertices)
@@ -775,62 +813,62 @@ do
 			itemCounter = itemCounter + 1;
 			local id = itemCounter;
 			
-			local newQuad = getrenv().setmetatable({
+			local newQuad = _setmetatable({
 				_id = id,
 				__OBJECT_EXISTS = true,
 				_properties = {
-					Color = getrenv().Color3.new(),
+					Color = _color3new(),
 					Filled = false,
-					PointA = getrenv().Vector2.new(),
-					PointB = getrenv().Vector2.new(),
-					PointC = getrenv().Vector2.new(),
-					PointD = getrenv().Vector2.new(),
+					PointA = _vector2new(),
+					PointB = _vector2new(),
+					PointC = _vector2new(),
+					PointD = _vector2new(),
 					Thickness = 1,
 					Transparency = 1,
 					Visible = false,
 					ZIndex = 0
 				},
-				_frame = createFramer("Frame", {
+				_frame = create("Frame", {
 					BackgroundTransparency = 1,
 					Parent = drawingDirectory,
-					Size = getrenv().UDim2.new(1, 0, 1, 0),
+					Size = _udim2new(1, 0, 1, 0),
 					Visible = false,
 					ZIndex = 0
 				}, {
-					createFramer("Frame", {
+					create("Frame", {
 						Name = "_line1",
-						AnchorPoint = getrenv().Vector2.new(0.5, 0.5),
-						BackgroundColor3 = getrenv().Color3.new(),
+						AnchorPoint = _vector2new(0.5, 0.5),
+						BackgroundColor3 = _color3new(),
 						BorderSizePixel = 0,
-						Position = getrenv().UDim2.new(),
-						Size = getrenv().UDim2.new(),
+						Position = _udim2new(),
+						Size = _udim2new(),
 						ZIndex = 0
 					}),
-					createFramer("Frame", {
+					create("Frame", {
 						Name = "_line2",
-						AnchorPoint = getrenv().Vector2.new(0.5, 0.5),
-						BackgroundColor3 = getrenv().Color3.new(),
+						AnchorPoint = _vector2new(0.5, 0.5),
+						BackgroundColor3 = _color3new(),
 						BorderSizePixel = 0,
-						Position = getrenv().UDim2.new(),
-						Size = getrenv().UDim2.new(),
+						Position = _udim2new(),
+						Size = _udim2new(),
 						ZIndex = 0
 					}),
-					createFramer("Frame", {
+					create("Frame", {
 						Name = "_line3",
-						AnchorPoint = getrenv().Vector2.new(0.5, 0.5),
-						BackgroundColor3 = getrenv().Color3.new(),
+						AnchorPoint = _vector2new(0.5, 0.5),
+						BackgroundColor3 = _color3new(),
 						BorderSizePixel = 0,
-						Position = getrenv().UDim2.new(),
-						Size = getrenv().UDim2.new(),
+						Position = _udim2new(),
+						Size = _udim2new(),
 						ZIndex = 0
 					}),
-					createFramer("Frame", {
+					create("Frame", {
 						Name = "_line4",
-						AnchorPoint = getrenv().Vector2.new(0.5, 0.5),
-						BackgroundColor3 = getrenv().Color3.new(),
+						AnchorPoint = _vector2new(0.5, 0.5),
+						BackgroundColor3 = _color3new(),
 						BorderSizePixel = 0,
-						Position = getrenv().UDim2.new(),
-						Size = getrenv().UDim2.new(),
+						Position = _udim2new(),
+						Size = _udim2new(),
 						ZIndex = 0
 					})
 				})
@@ -851,9 +889,6 @@ do
 		function quad:__newindex(k, v)
 			if self.__OBJECT_EXISTS == true then
 				local props, frame = self._properties, self._frame;
-				if props[k] == nil or props[k] == v or typeof(props[k]) ~= typeof(v) then
-					return;
-				end
 				props[k] = v;
 				if k == "Color" then
 					frame._line1.BackgroundColor3 = v;
@@ -895,11 +930,11 @@ do
 						self:_calculateFill();
 					end
 				elseif k == "Thickness" then
-					local thickness = getrenv().math.max(v, 1);
-                    frame._line1.Size = getrenv().UDim2.fromOffset(frame._line1.AbsoluteSize.X, thickness);
-                    frame._line2.Size = getrenv().UDim2.fromOffset(frame._line2.AbsoluteSize.X, thickness);
-                    frame._line3.Size = getrenv().UDim2.fromOffset(frame._line3.AbsoluteSize.X, thickness);
-                    frame._line4.Size = getrenv().UDim2.fromOffset(frame._line3.AbsoluteSize.X, thickness);
+					local thickness = _mathmax(v, 1);
+                    frame._line1.Size = _udim2fromoffset(frame._line1.AbsoluteSize.X, thickness);
+                    frame._line2.Size = _udim2fromoffset(frame._line2.AbsoluteSize.X, thickness);
+                    frame._line3.Size = _udim2fromoffset(frame._line3.AbsoluteSize.X, thickness);
+                    frame._line4.Size = _udim2fromoffset(frame._line3.AbsoluteSize.X, thickness);
 				elseif k == "Transparency" then
 					frame._line1.BackgroundTransparency = 1 - v;
 					frame._line2.BackgroundTransparency = 1 - v;
@@ -924,7 +959,7 @@ do
 		function quad:Destroy()
 			cache[self._id] = nil;
 			self.__OBJECT_EXISTS = false;
-			game.Destroy(self._frame);
+			_destroy(self._frame);
 		end
 		
 		function quad:_updateVertices(vertices)
@@ -942,69 +977,44 @@ do
 		classes.Quad = quad;
 	end
 
-    drawing.new = newcclosure(function(x)
-        return getrenv().assert(classes[x], getrenv().string.format("Invalid drawing type '%s'", x)).new();
-    end);
+    drawing.new = function(x)
+        return _assert(classes[x], _stringformat("Invalid drawing type '%s'", x)).new();
+    end
 
-    drawing.clear = newcclosure(function()
+    drawing.clear = function()
         for i, v in cache do
 			if v.__OBJECT_EXISTS then
 				v:Destroy();
 			end
         end
-    end);
+    end
 
 	drawing.cache = cache;
 end
 
 setreadonly(drawing, true);
 setreadonly(drawing.Fonts, true);
-getgenv().Drawing = drawing;
-getgenv().cleardrawcache = drawing.clear;
 
-getgenv()["cleardrawcache"] = drawing.clear
-getgenv()["clear_draw_cache"] = drawing.clear
-getgenv()["ClearDrawCache"] = drawing.clear
 
-local function isrenderobj(inst)
-    for _, v in pairs(drawing.cache) do
-        if v == inst and type(v) == "table" then
-            return true
-        end
-    end
-    return false
+genv.Drawing = drawing;
+genv.cleardrawcache = drawing.clear;
+
+genv.isrenderobj = function(x)
+	--warn("erm: "..tostring(x))
+	return tostring(x) == "Drawing";
 end
 
-getgenv()["isrenderobj"] = isrenderobj
-getgenv()["is_render_obj"] = isrenderobj
-getgenv()["IsRenderObj"] = isrenderobj
-
-local function setrenderproperty(drawingObject, property, value)
-	assert(isrenderobj(drawingObject), string.format("invalid argument #1 to 'setrenderproperty' (Drawing expected, got %s)", typeof(drawingObject)));
-    local success, err = pcall(function()
-        drawingObject[property] = value
-    end)
-    if not success then
-        warn("Failed to set property: " .. property .. " | Error: " .. err)
-    end
+genv.getrenderproperty = function(x, y)
+	assert(isrenderobj(x), 'invalid drawing object')
+    
+    return x[y];
 end
 
-local function getrenderproperty(drawingObject, property)
-	assert(isrenderobj(drawingObject), string.format("invalid argument #1 to 'getrenderproperty' (Drawing expected, got %s)", typeof(drawingObject)));
-    local success, value = pcall(function()
-        return drawingObject[property]
-    end)
-    if not success then
-        warn("Failed to get property: " .. property)
-        return nil
-    end
-    return value
+genv.setrenderproperty = function(x, y, z)
+    assert(isrenderobj(x), 'invalid drawing object')
+    x[y] = z;
 end
 
-getgenv()["getrenderproperty"] = getrenderproperty
-getgenv()["get_render_property"] = getrenderproperty
-getgenv()["GetRenderProperty"] = getrenderproperty
+local _isrenderobj = (isrenderobj);
 
-getgenv()["setrenderproperty"] = setrenderproperty
-getgenv()["set_render_property"] = setrenderproperty
-getgenv()["SetRenderProperty"] = setrenderproperty
+genv.DRAWING_LOADED = true;
