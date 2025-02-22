@@ -977,17 +977,17 @@ do
 		classes.Quad = quad;
 	end
 
-    drawing.new = function(x)
+    drawing.new = newcclosure(function(x)
         return _assert(classes[x], _stringformat("Invalid drawing type '%s'", x)).new();
-    end
+    end)
 
-    drawing.clear = function()
+    drawing.clear = newcclosure(function()
         for i, v in cache do
 			if v.__OBJECT_EXISTS then
 				v:Destroy();
 			end
         end
-    end
+    end)
 
 	drawing.cache = cache;
 end
