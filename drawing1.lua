@@ -999,22 +999,20 @@ setreadonly(drawing.Fonts, true);
 genv.Drawing = drawing;
 genv.cleardrawcache = drawing.clear;
 
-genv.isrenderobj = function(x)
+genv.isrenderobj = newcclosure(function(x)
 	--warn("erm: "..tostring(x))
 	return tostring(x) == "Drawing";
-end
+end)
 
-genv.getrenderproperty = function(x, y)
+genv.getrenderproperty = newcclosure(function(x, y)
 	assert(isrenderobj(x), 'invalid drawing object')
     
     return x[y];
-end
+end)
 
-genv.setrenderproperty = function(x, y, z)
+genv.setrenderproperty = newcclosure(function(x, y, z)
     assert(isrenderobj(x), 'invalid drawing object')
     x[y] = z;
-end
+end)
 
 local _isrenderobj = (isrenderobj);
-
-genv.DRAWING_LOADED = true;
